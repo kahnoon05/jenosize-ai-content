@@ -9,8 +9,7 @@ from typing import List, Dict, Any, Optional
 import time
 
 from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import PromptTemplate, ChatPromptTemplate
 from langchain.chains import LLMChain
 from langchain.schema import HumanMessage, SystemMessage
@@ -59,14 +58,18 @@ class LangChainService:
                 )
                 logger.info(f"Initialized OpenAI LLM: {settings.llm_model}")
 
-            # Initialize local embeddings (HuggingFace sentence-transformers)
-            # Uses 'all-MiniLM-L6-v2' - fast, efficient, no API key needed
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-MiniLM-L6-v2",
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True}
+            # Initialize OpenAI embeddings (lighter than local HuggingFace models)
+            # Uses 'text-embedding-3-small' - fast, high quality, API-based
+            import os
+            openai_key = os.getenv("OPENAI_API_KEY")
+            if not openai_key:
+                raise ValueError("OPENAI_API_KEY not found in environment variables")
+
+            self.embeddings = OpenAIEmbeddings(
+                openai_api_key=openai_key,
+                model="text-embedding-3-small"
             )
-            logger.info("Initialized local embeddings: all-MiniLM-L6-v2")
+            logger.info("Initialized OpenAI embeddings: text-embedding-3-small")
 
             # Initialize prompt templates
             self._setup_prompts()

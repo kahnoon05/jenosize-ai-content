@@ -105,13 +105,16 @@ class Settings(BaseSettings):
     # Embedding Settings
     # ============================================
     embedding_model: str = Field(
-        default="sentence-transformers/all-MiniLM-L6-v2",
-        description="HuggingFace embedding model for vector embeddings (local, no API key needed)"
+        default="text-embedding-3-small",
+        description="OpenAI embedding model for vector embeddings (API-based, lighter than local models)"
     )
     embedding_dimensions: int = Field(
-        default=384,
-        description="Embedding vector dimensions (384 for all-MiniLM-L6-v2)"
+        default=1536,
+        description="Embedding vector dimensions (1536 for text-embedding-3-small)"
     )
+
+    # OpenAI API Key (for embeddings and optionally for LLM)
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key for embeddings and GPT models")
 
     # ============================================
     # Content Generation Settings
