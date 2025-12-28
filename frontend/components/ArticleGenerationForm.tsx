@@ -60,9 +60,6 @@ export function ArticleGenerationForm({
     mode: 'onChange',
   });
 
-  const watchedKeywords = watch('keywords') || [];
-  const watchedTargetLength = watch('target_length');
-
   // Handle form submission
   const onFormSubmit = (data: ArticleGenerationFormData) => {
     onSubmit(data);

@@ -28,6 +28,7 @@ export class APIError extends Error {
   detail?: string;
   path?: string;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   constructor(message: string, error?: any) {
     super(message);
     this.name = 'APIError';
@@ -201,6 +202,7 @@ class APIClient {
    * Create a cancel token for request cancellation
    * Useful for implementing request cancellation on component unmount
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createCancelToken(): { token: any; cancel: any } {
     const CancelToken = axios.CancelToken;
     const source = CancelToken.source();

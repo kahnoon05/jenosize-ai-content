@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Sparkles, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ArticleGenerationForm } from '@/components/ArticleGenerationForm';
 import { ArticleDisplay } from '@/components/ArticleDisplay';
@@ -35,8 +35,6 @@ export default function HomePage() {
     generateArticle,
     isLoading: isGenerating,
     isError,
-    isSuccess,
-    article,
     errorMessage,
     reset,
   } = useArticleGeneration({
@@ -200,7 +198,7 @@ export default function HomePage() {
                 </h2>
                 <p className="text-gray-600 mb-6 max-w-md mx-auto">
                   Configure your article parameters in the form and click
-                  "Generate Article" to create high-quality business content
+                  &quot;Generate Article&quot; to create high-quality business content
                   powered by AI.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
