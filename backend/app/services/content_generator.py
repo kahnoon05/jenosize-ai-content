@@ -23,6 +23,16 @@ from app.services.qdrant_service import get_qdrant_service
 from app.services.langchain_service import get_langchain_service
 from app.core.config import settings
 from app.core.logging import logger
+from app.core.constants import (
+    H1_PATTERN,
+    H2_PATTERN,
+    H2_H3_PATTERN,
+    MIN_HEADING_COUNT,
+    PLACEHOLDER_KEYWORDS,
+    META_DESCRIPTION_MAX_LENGTH,
+    META_DESCRIPTION_TRUNCATE_LENGTH,
+    META_DESCRIPTION_FALLBACK_LENGTH,
+)
 
 
 class ContentGeneratorService:
@@ -203,18 +213,17 @@ class ContentGeneratorService:
             )
 
         # Check for title (H1 heading)
-        if not re.search(r'^#\s+.+$', content, re.MULTILINE):
+        if not re.search(H1_PATTERN, content, re.MULTILINE):
             issues.append("No H1 title found")
 
         # Check for placeholder text
-        placeholders = ["[Insert", "[Add", "[TODO", "lorem ipsum"]
-        for placeholder in placeholders:
+        for placeholder in PLACEHOLDER_KEYWORDS:
             if placeholder.lower() in content.lower():
                 issues.append(f"Placeholder text detected: {placeholder}")
 
         # Check for proper structure (should have multiple headings)
-        headings = re.findall(r'^#{2,3}\s+.+$', content, re.MULTILINE)
-        if len(headings) < 3:
+        headings = re.findall(H2_H3_PATTERN, content, re.MULTILINE)
+        if len(headings) < MIN_HEADING_COUNT:
             issues.append("Article may lack proper structure (few headings)")
 
         return {
@@ -264,12 +273,12 @@ class ContentGeneratorService:
         # Generate meta description
         meta_description = extracted_metadata.get("meta_description")
         if not meta_description:
-            # Fallback: use first 150 chars
-            meta_description = content[:150].replace("#", "").strip() + "..."
+            # Fallback: use first portion of content without markdown
+            meta_description = content[:META_DESCRIPTION_FALLBACK_LENGTH].replace("#", "").strip() + "..."
 
-        # Ensure meta description is not too long
-        if len(meta_description) > 160:
-            meta_description = meta_description[:157] + "..."
+        # Ensure meta description is not too long (Google's recommended limit)
+        if len(meta_description) > META_DESCRIPTION_MAX_LENGTH:
+            meta_description = meta_description[:META_DESCRIPTION_TRUNCATE_LENGTH] + "..."
 
         from datetime import datetime, timezone
 
@@ -287,23 +296,25 @@ class ContentGeneratorService:
             generated_at=datetime.now(timezone.utc),
         )
 
-    def _extract_sections(self, content: str) -> List[Dict[str, str]]:
+    def _extract_sections(self, content: str) -> Optional[List[Dict[str, str]]]:
         """
         Extract article sections based on markdown headings.
 
+        Splits the article by H2 headings and returns each section with its
+        title and content for structured display or processing.
+
         Args:
-            content: Article content in markdown
+            content: Article content in markdown format
 
         Returns:
-            List of sections with titles and content
+            List of sections with titles and content, or None if no sections found
         """
         sections = []
 
         # Split by H2 headings
-        h2_pattern = r'^##\s+(.+)$'
-        parts = re.split(h2_pattern, content, flags=re.MULTILINE)
+        parts = re.split(H2_PATTERN, content, flags=re.MULTILINE)
 
-        # Skip the first part (before first H2) if it exists
+        # Process matched parts (odd indices are titles, even indices are content)
         if len(parts) > 1:
             for i in range(1, len(parts), 2):
                 if i + 1 < len(parts):
@@ -320,11 +331,20 @@ class ContentGeneratorService:
         """
         Check health of all content generation components.
 
+        Performs health checks on all dependent services and returns
+        an aggregated status report.
+
         Returns:
-            Dict with health status of all services
+            Dict with health status of all services and overall status
         """
+        from app.core.constants import (
+            HEALTH_STATUS_HEALTHY,
+            HEALTH_STATUS_UNHEALTHY,
+            HEALTH_STATUS_DEGRADED,
+        )
+
         health_status = {
-            "content_generator": "healthy",
+            "content_generator": HEALTH_STATUS_HEALTHY,
             "services": {},
         }
 
@@ -332,12 +352,12 @@ class ContentGeneratorService:
         try:
             qdrant_healthy, qdrant_msg = await self.qdrant_service.health_check()
             health_status["services"]["qdrant"] = {
-                "status": "healthy" if qdrant_healthy else "unhealthy",
+                "status": HEALTH_STATUS_HEALTHY if qdrant_healthy else HEALTH_STATUS_UNHEALTHY,
                 "message": qdrant_msg,
             }
         except Exception as e:
             health_status["services"]["qdrant"] = {
-                "status": "unhealthy",
+                "status": HEALTH_STATUS_UNHEALTHY,
                 "message": str(e),
             }
 
@@ -345,21 +365,21 @@ class ContentGeneratorService:
         try:
             langchain_healthy, langchain_msg = await self.langchain_service.health_check()
             health_status["services"]["langchain"] = {
-                "status": "healthy" if langchain_healthy else "unhealthy",
+                "status": HEALTH_STATUS_HEALTHY if langchain_healthy else HEALTH_STATUS_UNHEALTHY,
                 "message": langchain_msg,
             }
         except Exception as e:
             health_status["services"]["langchain"] = {
-                "status": "unhealthy",
+                "status": HEALTH_STATUS_UNHEALTHY,
                 "message": str(e),
             }
 
-        # Overall status
+        # Overall status: healthy if all services healthy, degraded otherwise
         all_healthy = all(
-            svc["status"] == "healthy"
+            svc["status"] == HEALTH_STATUS_HEALTHY
             for svc in health_status["services"].values()
         )
-        health_status["overall_status"] = "healthy" if all_healthy else "degraded"
+        health_status["overall_status"] = HEALTH_STATUS_HEALTHY if all_healthy else HEALTH_STATUS_DEGRADED
 
         return health_status
 

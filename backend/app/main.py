@@ -14,6 +14,11 @@ import time
 
 from app.core.config import settings
 from app.core.logging import logger
+from app.core.constants import (
+    HEALTH_STATUS_OPERATIONAL,
+    ERROR_TYPE_VALIDATION,
+    ERROR_TYPE_INTERNAL,
+)
 from app.routers import article_router, health_router
 from app.services.qdrant_service import get_qdrant_service
 from app.services.langchain_service import get_langchain_service
@@ -145,13 +150,16 @@ async def log_requests(request: Request, call_next):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """
     Handle Pydantic validation errors with detailed error messages.
+
+    Provides structured error responses for invalid request parameters,
+    making it easier for clients to understand and fix validation issues.
     """
     logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
-            "error": "ValidationError",
+            "error": ERROR_TYPE_VALIDATION,
             "message": "Invalid request parameters",
             "detail": exc.errors(),
             "path": str(request.url.path),
@@ -163,6 +171,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def general_exception_handler(request: Request, exc: Exception):
     """
     Handle unexpected exceptions gracefully.
+
+    Catches all unhandled exceptions and returns structured error responses.
+    In production, hides internal error details for security.
     """
     logger.error(
         f"Unhandled exception on {request.url.path}: {str(exc)}",
@@ -172,7 +183,7 @@ async def general_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "error": "InternalServerError",
+            "error": ERROR_TYPE_INTERNAL,
             "message": "An unexpected error occurred",
             "detail": str(exc) if settings.is_development else "Internal server error",
             "path": str(request.url.path),
@@ -211,7 +222,7 @@ async def root():
             "generate_article": "/api/v1/generate-article",
             "supported_options": "/api/v1/supported-options",
         },
-        "status": "operational",
+        "status": HEALTH_STATUS_OPERATIONAL,
     }
 
 

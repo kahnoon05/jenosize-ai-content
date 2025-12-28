@@ -13,14 +13,32 @@ import {
   SupportedOptionsResponse,
   ErrorResponse,
 } from './types';
+import {
+  API_TIMEOUT_DEFAULT,
+  API_TIMEOUT_ARTICLE_GENERATION,
+  ERROR_TYPE_NETWORK,
+  ERROR_TYPE_UNKNOWN,
+  ERROR_TYPE_CANCEL,
+  ERROR_MSG_NO_RESPONSE,
+  ERROR_MSG_REQUEST_CANCELLED,
+  ERROR_MSG_UNKNOWN,
+  TOPIC_MIN_LENGTH,
+  KEYWORDS_MAX_COUNT,
+  TARGET_LENGTH_MIN,
+  TARGET_LENGTH_MAX,
+  TEMPERATURE_MIN,
+  TEMPERATURE_MAX,
+} from './api-constants';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
-const API_TIMEOUT = 120000; // 2 minutes for article generation
 
 /**
  * Custom error class for API errors with enhanced error information
+ *
+ * Provides structured error information including status codes, error types,
+ * and detailed messages for better error handling and user feedback.
  */
 export class APIError extends Error {
   statusCode?: number;
@@ -34,19 +52,34 @@ export class APIError extends Error {
     this.name = 'APIError';
 
     if (error?.response?.data) {
-      const errorData = error.response.data as ErrorResponse;
-      this.statusCode = error.response.status;
-      this.errorType = errorData.error;
-      this.detail = errorData.detail;
-      this.path = errorData.path;
+      // Server responded with error
+      this._handleServerError(error);
     } else if (error?.request) {
-      this.statusCode = 0;
-      this.errorType = 'NetworkError';
-      this.detail = 'No response received from server. Please check your connection.';
+      // Request made but no response received
+      this._handleNetworkError();
     } else {
-      this.errorType = 'UnknownError';
-      this.detail = error?.message || 'An unknown error occurred';
+      // Other errors (e.g., request setup issues)
+      this._handleUnknownError(error);
     }
+  }
+
+  private _handleServerError(error: any): void {
+    const errorData = error.response.data as ErrorResponse;
+    this.statusCode = error.response.status;
+    this.errorType = errorData.error;
+    this.detail = errorData.detail;
+    this.path = errorData.path;
+  }
+
+  private _handleNetworkError(): void {
+    this.statusCode = 0;
+    this.errorType = ERROR_TYPE_NETWORK;
+    this.detail = ERROR_MSG_NO_RESPONSE;
+  }
+
+  private _handleUnknownError(error: any): void {
+    this.errorType = ERROR_TYPE_UNKNOWN;
+    this.detail = error?.message || ERROR_MSG_UNKNOWN;
   }
 
   toString(): string {
@@ -63,13 +96,23 @@ class APIClient {
   constructor() {
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      timeout: API_TIMEOUT,
+      timeout: API_TIMEOUT_DEFAULT,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
     });
 
+    this._setupInterceptors();
+  }
+
+  /**
+   * Setup axios interceptors for logging and error handling
+   *
+   * Configures request and response interceptors for debugging in development
+   * and consistent error handling across all requests.
+   */
+  private _setupInterceptors(): void {
     // Request interceptor for logging (development only)
     if (process.env.NODE_ENV === 'development') {
       this.client.interceptors.request.use(
@@ -151,22 +194,22 @@ class APIClient {
   ): Promise<ArticleGenerationResponse> {
     try {
       // Validate request before sending
-      this.validateGenerationRequest(request);
+      this._validateGenerationRequest(request);
 
       const response = await this.client.post<ArticleGenerationResponse>(
         `/api/${API_VERSION}/generate-article`,
         request,
         {
           ...config,
-          // Allow longer timeout for article generation
-          timeout: config?.timeout || 180000, // 3 minutes
+          // Use longer timeout for article generation
+          timeout: config?.timeout || API_TIMEOUT_ARTICLE_GENERATION,
         }
       );
 
       return response.data;
     } catch (error) {
       if (axios.isCancel(error)) {
-        throw new APIError('Request was cancelled', error);
+        throw new APIError(ERROR_MSG_REQUEST_CANCELLED, error);
       }
       throw new APIError('Failed to generate article', error);
     }
@@ -174,26 +217,38 @@ class APIClient {
 
   /**
    * Validate generation request before sending to API
-   * Provides client-side validation for better UX
+   *
+   * Provides client-side validation for better UX by catching errors
+   * before making the API request.
+   *
+   * @throws {APIError} If validation fails
    */
-  private validateGenerationRequest(request: ArticleGenerationRequest): void {
-    if (!request.topic || request.topic.trim().length < 3) {
-      throw new APIError('Topic must be at least 3 characters long');
+  private _validateGenerationRequest(request: ArticleGenerationRequest): void {
+    // Validate topic
+    if (!request.topic || request.topic.trim().length < TOPIC_MIN_LENGTH) {
+      throw new APIError(`Topic must be at least ${TOPIC_MIN_LENGTH} characters long`);
     }
 
-    if (request.keywords && request.keywords.length > 10) {
-      throw new APIError('Maximum 10 keywords allowed');
+    // Validate keywords count
+    if (request.keywords && request.keywords.length > KEYWORDS_MAX_COUNT) {
+      throw new APIError(`Maximum ${KEYWORDS_MAX_COUNT} keywords allowed`);
     }
 
-    if (request.target_length) {
-      if (request.target_length < 800 || request.target_length > 4000) {
-        throw new APIError('Target length must be between 800 and 4000 words');
+    // Validate target length
+    if (request.target_length !== undefined) {
+      if (request.target_length < TARGET_LENGTH_MIN || request.target_length > TARGET_LENGTH_MAX) {
+        throw new APIError(
+          `Target length must be between ${TARGET_LENGTH_MIN} and ${TARGET_LENGTH_MAX} words`
+        );
       }
     }
 
+    // Validate temperature
     if (request.temperature !== undefined) {
-      if (request.temperature < 0 || request.temperature > 1) {
-        throw new APIError('Temperature must be between 0 and 1');
+      if (request.temperature < TEMPERATURE_MIN || request.temperature > TEMPERATURE_MAX) {
+        throw new APIError(
+          `Temperature must be between ${TEMPERATURE_MIN} and ${TEMPERATURE_MAX}`
+        );
       }
     }
   }

@@ -12,6 +12,7 @@ import {
   ArticleGenerationResponse,
   GeneratedArticle,
 } from '@/lib/types';
+import { MUTATION_RETRY_COUNT, MUTATION_RETRY_DELAY } from '@/lib/api-constants';
 import { useCallback } from 'react';
 
 interface UseArticleGenerationOptions {
@@ -21,6 +22,9 @@ interface UseArticleGenerationOptions {
 
 /**
  * Hook for article generation with loading states and error handling
+ *
+ * Wraps the article generation API call with TanStack Query for automatic
+ * retry logic, error handling, and state management.
  */
 export function useArticleGeneration(options?: UseArticleGenerationOptions) {
   const mutation: UseMutationResult<
@@ -41,12 +45,14 @@ export function useArticleGeneration(options?: UseArticleGenerationOptions) {
         options.onError(error);
       }
     },
-    retry: 1, // Retry once on failure
-    retryDelay: 1000, // 1 second delay before retry
+    retry: MUTATION_RETRY_COUNT,
+    retryDelay: MUTATION_RETRY_DELAY,
   });
 
   /**
    * Generate article with the provided parameters
+   *
+   * Initiates the article generation API call with the given request parameters.
    */
   const generateArticle = useCallback(
     (request: ArticleGenerationRequest) => {
@@ -62,21 +68,29 @@ export function useArticleGeneration(options?: UseArticleGenerationOptions) {
 
   /**
    * Check if generation was successful
+   *
+   * Returns true only if the mutation succeeded AND the API returned success=true
    */
   const isSuccess: boolean = mutation.isSuccess && mutation.data?.success === true;
 
   /**
    * Get error message if generation failed
+   *
+   * Checks both mutation-level errors and API-level errors
    */
   const errorMessage: string | undefined = mutation.error?.message || mutation.data?.error;
 
   /**
    * Get generation time in seconds
+   *
+   * Useful for displaying performance metrics to users
    */
   const generationTime: number | undefined = mutation.data?.generation_time_seconds;
 
   /**
    * Reset mutation state (clear generated article and errors)
+   *
+   * Useful for clearing the form and starting fresh
    */
   const reset = useCallback(() => {
     mutation.reset();

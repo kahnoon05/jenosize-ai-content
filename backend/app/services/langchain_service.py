@@ -16,6 +16,12 @@ from langchain.schema import HumanMessage, SystemMessage
 
 from app.core.config import settings
 from app.core.logging import logger
+from app.core.constants import (
+    WORDS_PER_MINUTE,
+    MIN_READING_TIME_MINUTES,
+    CONTENT_PREVIEW_LENGTH,
+    METADATA_EXTRACTION_CONTENT_LIMIT,
+)
 from app.models.article import ArticleGenerationRequest
 
 
@@ -207,21 +213,26 @@ Return as JSON:
         """
         Format retrieved similar articles into context for the prompt.
 
+        Takes the list of similar articles from vector search and formats them
+        into a structured context string that can be included in the generation prompt.
+
         Args:
             similar_articles: List of similar articles from vector search
 
         Returns:
-            Formatted context string
+            Formatted context string for inclusion in prompt, or empty string if no articles
         """
         if not similar_articles:
             return ""
 
         context_parts = []
         for i, article in enumerate(similar_articles, 1):
+            # Include a preview of content (first CONTENT_PREVIEW_LENGTH chars)
+            content_preview = article['content'][:CONTENT_PREVIEW_LENGTH]
             context_parts.append(
                 f"**Reference {i}:** {article['title']}\n"
                 f"Topic: {article['topic']} | Industry: {article['industry']}\n"
-                f"Key insights: {article['content'][:500]}...\n"
+                f"Key insights: {content_preview}...\n"
             )
 
         formatted_context = self.rag_context_template.format(
@@ -308,6 +319,9 @@ Return as JSON:
         """
         Extract metadata from generated article using Claude.
 
+        Sends the article content to the LLM for structured metadata extraction,
+        limiting content length to avoid token limits.
+
         Args:
             article_content: Generated article content
 
@@ -315,8 +329,10 @@ Return as JSON:
             Dict with meta_description, keywords, and related_topics
         """
         try:
-            # Create metadata extraction prompt
-            prompt = self.metadata_template.format(article_content=article_content[:3000])
+            # Create metadata extraction prompt (limit content to avoid token limits)
+            prompt = self.metadata_template.format(
+                article_content=article_content[:METADATA_EXTRACTION_CONTENT_LIMIT]
+            )
 
             messages = [HumanMessage(content=prompt)]
 
@@ -331,7 +347,7 @@ Return as JSON:
 
         except Exception as e:
             logger.error(f"Failed to extract metadata: {str(e)}")
-            # Return defaults on failure
+            # Return defaults on failure to ensure generation continues
             return {
                 "meta_description": article_content[:150] + "...",
                 "keywords": [],
@@ -342,31 +358,36 @@ Return as JSON:
         """
         Calculate estimated reading time in minutes.
 
-        Assumes average reading speed of 200 words per minute.
+        Uses standard reading speed metric of 200 words per minute.
+        Ensures minimum of 1 minute for very short content.
 
         Args:
-            text: Article text
+            text: Article text to calculate reading time for
 
         Returns:
             Estimated reading time in minutes (minimum 1)
         """
         word_count = len(text.split())
-        reading_time = max(1, round(word_count / 200))
+        reading_time = max(MIN_READING_TIME_MINUTES, round(word_count / WORDS_PER_MINUTE))
         return reading_time
 
     def extract_title_from_content(self, content: str) -> str:
         """
         Extract title (first H1) from markdown content.
 
+        Searches for the first H1 heading (lines starting with '# ') and
+        extracts the title text.
+
         Args:
             content: Markdown article content
 
         Returns:
-            Extracted title or default
+            Extracted title or "Untitled Article" if no H1 found
         """
         lines = content.split('\n')
         for line in lines:
             if line.startswith('# '):
+                # Remove the '# ' prefix and any trailing whitespace
                 return line[2:].strip()
         return "Untitled Article"
 

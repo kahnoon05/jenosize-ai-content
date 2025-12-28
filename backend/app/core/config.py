@@ -60,7 +60,15 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        """Get CORS origins as a list."""
+        """
+        Get CORS origins as a list.
+
+        Converts the comma-separated CORS origins string into a list,
+        handling the special case of "*" (allow all origins).
+
+        Returns:
+            List of origin URLs or ["*"] for unrestricted access
+        """
         if self.cors_origins == "*":
             return ["*"]
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
@@ -195,17 +203,36 @@ class Settings(BaseSettings):
 
     @property
     def qdrant_url(self) -> str:
-        """Get Qdrant URL for REST API connection."""
-        return f"http://{self.qdrant_host}:{self.qdrant_port}"
+        """
+        Get Qdrant URL for REST API connection.
+
+        Constructs the appropriate URL based on HTTPS configuration,
+        supporting both local and cloud deployments.
+
+        Returns:
+            Complete Qdrant connection URL with protocol, host, and port
+        """
+        protocol = "https" if self.qdrant_use_https else "http"
+        return f"{protocol}://{self.qdrant_host}:{self.qdrant_port}"
 
     @property
     def is_development(self) -> bool:
-        """Check if running in development environment."""
+        """
+        Check if running in development environment.
+
+        Returns:
+            True if environment is 'development', False otherwise
+        """
         return self.environment.lower() == "development"
 
     @property
     def is_production(self) -> bool:
-        """Check if running in production environment."""
+        """
+        Check if running in production environment.
+
+        Returns:
+            True if environment is 'production', False otherwise
+        """
         return self.environment.lower() == "production"
 
 

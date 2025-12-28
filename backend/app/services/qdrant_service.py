@@ -19,6 +19,10 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 
 from app.core.config import settings
 from app.core.logging import logger
+from app.core.constants import (
+    QDRANT_MAX_RETRIES,
+    QDRANT_INITIAL_RETRY_DELAY,
+)
 
 
 class QdrantService:
@@ -79,41 +83,54 @@ class QdrantService:
                 f"Initialized Qdrant client via HTTP at {settings.qdrant_host}:{settings.qdrant_port}"
             )
 
-        # Verify connection with retry logic
-        max_retries = 5
-        retry_delay = 2  # seconds
+        # Verify connection with retry logic and exponential backoff
+        self._verify_connection_with_retry()
 
-        for attempt in range(1, max_retries + 1):
+    def _verify_connection_with_retry(self) -> None:
+        """
+        Verify Qdrant connection with retry logic and exponential backoff.
+
+        Attempts to connect to Qdrant multiple times with increasing delays
+        between retries to handle temporary network issues or service startup delays.
+
+        Raises:
+            Exception: If connection fails after all retry attempts
+        """
+        retry_delay = QDRANT_INITIAL_RETRY_DELAY
+
+        for attempt in range(1, QDRANT_MAX_RETRIES + 1):
             try:
                 collections = self.client.get_collections()
                 logger.info(f"Qdrant connection verified. Found {len(collections.collections)} collections")
-                break
+                return  # Success - exit function
             except Exception as e:
-                if attempt < max_retries:
+                if attempt < QDRANT_MAX_RETRIES:
                     logger.warning(
-                        f"Failed to connect to Qdrant (attempt {attempt}/{max_retries}): {str(e)}. "
+                        f"Failed to connect to Qdrant (attempt {attempt}/{QDRANT_MAX_RETRIES}): {str(e)}. "
                         f"Retrying in {retry_delay} seconds..."
                     )
                     time.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
                 else:
-                    logger.error(f"Failed to connect to Qdrant after {max_retries} attempts: {str(e)}")
+                    logger.error(f"Failed to connect to Qdrant after {QDRANT_MAX_RETRIES} attempts: {str(e)}")
                     raise
 
     async def initialize_collection(self, recreate: bool = False) -> bool:
         """
         Initialize or recreate the articles collection in Qdrant.
 
+        Creates a new collection with appropriate vector configuration and payload indices
+        for efficient semantic search and filtering.
+
         Args:
             recreate: If True, delete existing collection and create new one
 
         Returns:
-            bool: True if successful, False otherwise
+            True if successful, False otherwise
         """
         try:
             # Check if collection exists
-            collections = self.client.get_collections()
-            exists = any(col.name == self.collection_name for col in collections.collections)
+            exists = self._collection_exists()
 
             if exists:
                 if recreate:
@@ -123,28 +140,11 @@ class QdrantService:
                     logger.info(f"Collection {self.collection_name} already exists")
                     return True
 
-            # Create collection with cosine similarity
-            logger.info(f"Creating collection: {self.collection_name}")
-            self.client.create_collection(
-                collection_name=self.collection_name,
-                vectors_config=qdrant_models.VectorParams(
-                    size=self.vector_size,
-                    distance=qdrant_models.Distance.COSINE,  # Cosine similarity for semantic search
-                ),
-            )
+            # Create collection with cosine similarity for semantic search
+            self._create_collection()
 
-            # Create payload index for faster filtering
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="industry",
-                field_schema=qdrant_models.PayloadSchemaType.KEYWORD,
-            )
-
-            self.client.create_payload_index(
-                collection_name=self.collection_name,
-                field_name="topic",
-                field_schema=qdrant_models.PayloadSchemaType.TEXT,
-            )
+            # Create payload indices for faster filtering
+            self._create_payload_indices()
 
             logger.info(f"Collection {self.collection_name} created successfully")
             return True
@@ -152,6 +152,50 @@ class QdrantService:
         except Exception as e:
             logger.error(f"Failed to initialize collection: {str(e)}")
             return False
+
+    def _collection_exists(self) -> bool:
+        """
+        Check if the collection exists in Qdrant.
+
+        Returns:
+            True if collection exists, False otherwise
+        """
+        collections = self.client.get_collections()
+        return any(col.name == self.collection_name for col in collections.collections)
+
+    def _create_collection(self) -> None:
+        """
+        Create the Qdrant collection with vector configuration.
+
+        Uses cosine similarity distance metric for semantic search.
+        """
+        logger.info(f"Creating collection: {self.collection_name}")
+        self.client.create_collection(
+            collection_name=self.collection_name,
+            vectors_config=qdrant_models.VectorParams(
+                size=self.vector_size,
+                distance=qdrant_models.Distance.COSINE,
+            ),
+        )
+
+    def _create_payload_indices(self) -> None:
+        """
+        Create payload indices for faster filtering on common fields.
+
+        Indices on 'industry' (keyword) and 'topic' (text) enable
+        efficient filtering during similarity search.
+        """
+        self.client.create_payload_index(
+            collection_name=self.collection_name,
+            field_name="industry",
+            field_schema=qdrant_models.PayloadSchemaType.KEYWORD,
+        )
+
+        self.client.create_payload_index(
+            collection_name=self.collection_name,
+            field_name="topic",
+            field_schema=qdrant_models.PayloadSchemaType.TEXT,
+        )
 
     async def add_article(
         self,
