@@ -38,6 +38,14 @@ RUN poetry install --only main --no-root
 # This creates /code/app/ directory with all the Python modules
 COPY app ./app
 
+# DEBUG: List what was copied to verify __init__.py files exist
+RUN echo "=== Checking copied files ===" && \
+    ls -la /code/app/ && \
+    echo "=== Checking models directory ===" && \
+    ls -la /code/app/models/ && \
+    echo "=== Checking for __init__.py ===" && \
+    find /code/app -name "__init__.py" -type f
+
 # Create necessary directories
 RUN mkdir -p /code/data/samples /code/data/generated /code/logs && \
     useradd -m -u 1000 appuser && \
