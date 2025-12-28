@@ -309,7 +309,7 @@ export function ArticleGenerationForm({
                 <span className="text-sm text-gray-700">
                   Use RAG (Retrieval-Augmented Generation)
                 </span>
-                <Info className="h-4 w-4 text-gray-400" title="Retrieve similar articles for better context" />
+                <Info className="h-4 w-4 text-gray-400" />
               </label>
               <p className="mt-1 ml-6 text-xs text-gray-500">
                 Retrieve similar articles from the database for enhanced context
