@@ -95,29 +95,43 @@ Your articles should:
         # Main article generation prompt template
         self.article_template = """Write a comprehensive business article about: {topic}
 
+**CRITICAL WORD COUNT REQUIREMENT:**
+⚠️ The article MUST be AT LEAST {target_length} words. This is NON-NEGOTIABLE.
+⚠️ Target range: {target_length}-{target_max} words (aim for {target_max} to be safe)
+⚠️ Going under {target_length} words is UNACCEPTABLE and will be rejected.
+
 **Context:**
 - Target Industry: {industry}
 - Target Audience: {audience}
 - Desired Tone: {tone}
-- **REQUIRED Word Count: MINIMUM {target_length} words** (you may write more, but NOT less)
 - Include Examples: {include_examples}
 - Include Statistics: {include_statistics}
 
 {rag_context}
 
 **Requirements:**
-1. **CRITICAL - Word Count:** The article MUST contain AT LEAST {target_length} words. Going over is acceptable and encouraged, but going under is NOT acceptable.
+1. **PRIMARY REQUIREMENT - Word Count:** Write a COMPREHENSIVE article with AT LEAST {target_length} words
+   - Add detailed explanations, examples, case studies, and analysis to reach the word count
+   - Expand on each point with specific details and insights
+   - Do NOT write a short summary - write a FULL, DETAILED article
+
 2. Create an engaging, SEO-friendly title
+
 3. Structure the article with clear H2 and H3 headings using markdown
+
 4. Include an introduction that hooks the reader
-5. Provide well-researched insights with specific examples
+
+5. Provide well-researched insights with specific examples and case studies
+
 6. Incorporate relevant trends and future perspectives
+
 7. End with actionable conclusions or thought-provoking questions
+
 8. Use professional but accessible language
-9. **IMPORTANT - SEO Keywords:** You MUST naturally incorporate ALL of these keywords throughout the article: {keywords}
-   - Include keywords in the title, headings, and body text
-   - Use each keyword at least 2-3 times naturally in context
-   - Maintain readability while ensuring keyword presence
+
+9. Naturally incorporate these SEO keywords if provided: {keywords}
+
+**REMINDER: The article must be at least {target_length} words. Make it comprehensive and detailed!**
 
 **Output Format:**
 Return ONLY the article content in markdown format, starting with the H1 title.
@@ -256,6 +270,9 @@ Return as JSON:
             # Format keywords
             keywords_str = ", ".join(request.keywords) if request.keywords else "None specified"
 
+            # Calculate target max (add 20% buffer to ensure we exceed minimum)
+            target_max = int(request.target_length * 1.2)
+
             # Build the prompt
             article_prompt = self.article_template.format(
                 topic=request.topic,
@@ -263,6 +280,7 @@ Return as JSON:
                 audience=request.audience.value,
                 tone=request.tone.value,
                 target_length=request.target_length,
+                target_max=target_max,
                 include_examples="Yes" if request.include_examples else "No",
                 include_statistics="Yes" if request.include_statistics else "No",
                 rag_context=rag_context,
