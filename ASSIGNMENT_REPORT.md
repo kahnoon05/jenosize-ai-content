@@ -10,24 +10,47 @@
 
 ### Model Selection Rationale
 
-For this assignment, I chose to use **Claude 3.5 Sonnet** as the primary language model with **OpenAI GPT-4** as a fallback option. This decision was based on:
+For this assignment, I implemented a **hybrid approach** combining fine-tuning and RAG:
 
-1. **Output Quality**: Claude 3.5 Sonnet demonstrates superior performance in generating long-form, coherent business content with proper structure and citations.
+**Primary Model: Fine-tuned GPT-3.5-turbo**
+- Model ID: `ft:gpt-3.5-turbo-0125:futuretrendarticle:jenosize:Cr7ayny6`
+- Fine-tuned on Jenosize business trend articles dataset
+- Optimized for Jenosize's writing style and tone
+- Cost-effective: ~$0.012 per 1K tokens (vs $0.03 for GPT-4)
 
-2. **Context Window**: With a 200K token context window, Claude can process extensive reference materials and generate comprehensive articles without losing context.
+**Fallback Model: Claude 3.5 Sonnet**
+- Used when OpenAI API is unavailable
+- Superior context window (200K tokens)
+- Excellent at long-form content generation
 
-3. **Instruction Following**: Claude excels at following complex prompts and maintaining consistent tone/style throughout generated content.
+This decision was based on:
 
-### RAG vs Fine-tuning Decision
+1. **Cost-Effectiveness**: Fine-tuned GPT-3.5 is 60% cheaper than GPT-4 while maintaining high quality for domain-specific tasks.
 
-While the assignment suggests fine-tuning, I implemented a **Retrieval-Augmented Generation (RAG)** approach instead for the following reasons:
+2. **Style Consistency**: Fine-tuning ensures consistent Jenosize tone and structure across all generated articles.
 
-**Advantages of RAG over Fine-tuning:**
-- ✅ **Cost-Effective**: No expensive fine-tuning compute costs (~$8-10 per training run)
-- ✅ **Flexibility**: Easy to update knowledge base without retraining models
-- ✅ **Real-time Updates**: New articles can be added to vector database immediately
-- ✅ **Source Attribution**: Can cite specific reference articles in generated content
-- ✅ **Scalability**: Works with any LLM provider without vendor lock-in
+3. **Specialized Knowledge**: Model trained specifically on business trends and future ideas content.
+
+### Hybrid Approach: Fine-tuning + RAG
+
+I combined BOTH techniques for maximum performance:
+
+**Why Hybrid is Better:**
+
+| Aspect | Fine-tuning Only | RAG Only | **Hybrid (Used)** |
+|--------|------------------|----------|-------------------|
+| Style Consistency | ✅ Excellent | ⚠️ Variable | ✅ **Excellent** |
+| Up-to-date Info | ❌ Static | ✅ Dynamic | ✅ **Dynamic** |
+| Source Attribution | ❌ No | ✅ Yes | ✅ **Yes** |
+| Cost per Article | ~$0.012 | ~$0.015 | ~$0.015 |
+| Training Cost | $8-10 once | $0 | $8-10 once |
+| Update Frequency | Weeks | Seconds | **Both!** |
+
+**How the Hybrid Works:**
+
+1. **Fine-tuned Model** learns Jenosize's writing style, tone, and structure
+2. **RAG** provides current examples and factual grounding
+3. **Combined Output** = Jenosize-style content with accurate, up-to-date information
 
 **RAG Implementation:**
 - Vector database: Qdrant Cloud (free tier)
