@@ -30,14 +30,11 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
 # Copy dependency files
 COPY pyproject.toml poetry.lock* ./
 
-# Install dependencies first (cached layer)
+# Install dependencies only (no package installation)
 RUN poetry install --only main --no-root
 
 # Copy application code
 COPY app ./app
-
-# Install the app package in the virtualenv
-RUN poetry install --only-root
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/data/samples /app/data/generated /app/logs && \
@@ -50,6 +47,6 @@ USER appuser
 EXPOSE 8000
 
 # Run the application with Railway's dynamic PORT
-# Note: Railway handles healthchecks via railway.json configuration
-# Use python -m to avoid PATH issues with uvicorn binary
+# IMPORTANT: Run from /app directory so Python can find the 'app' package
+WORKDIR /app
 CMD python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
