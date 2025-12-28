@@ -4,6 +4,7 @@
 .env.development.local
 .env.test.local
 .env.production.local
+RAILWAY_ENV_VARS.txt
 
 # API Keys and Secrets
 *.key
