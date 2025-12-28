@@ -99,21 +99,22 @@ Your articles should:
 - Target Industry: {industry}
 - Target Audience: {audience}
 - Desired Tone: {tone}
-- Target Length: ~{target_length} words
+- **REQUIRED Word Count: MINIMUM {target_length} words** (you may write more, but NOT less)
 - Include Examples: {include_examples}
 - Include Statistics: {include_statistics}
 
 {rag_context}
 
 **Requirements:**
-1. Create an engaging, SEO-friendly title
-2. Structure the article with clear H2 and H3 headings using markdown
-3. Include an introduction that hooks the reader
-4. Provide well-researched insights with specific examples
-5. Incorporate relevant trends and future perspectives
-6. End with actionable conclusions or thought-provoking questions
-7. Use professional but accessible language
-8. **IMPORTANT - SEO Keywords:** You MUST naturally incorporate ALL of these keywords throughout the article: {keywords}
+1. **CRITICAL - Word Count:** The article MUST contain AT LEAST {target_length} words. Going over is acceptable and encouraged, but going under is NOT acceptable.
+2. Create an engaging, SEO-friendly title
+3. Structure the article with clear H2 and H3 headings using markdown
+4. Include an introduction that hooks the reader
+5. Provide well-researched insights with specific examples
+6. Incorporate relevant trends and future perspectives
+7. End with actionable conclusions or thought-provoking questions
+8. Use professional but accessible language
+9. **IMPORTANT - SEO Keywords:** You MUST naturally incorporate ALL of these keywords throughout the article: {keywords}
    - Include keywords in the title, headings, and body text
    - Use each keyword at least 2-3 times naturally in context
    - Maintain readability while ensuring keyword presence
