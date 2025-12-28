@@ -53,10 +53,17 @@ class Settings(BaseSettings):
     # ============================================
     backend_host: str = Field(default="0.0.0.0", description="Backend host")
     backend_port: int = Field(default=8000, description="Backend port")
-    cors_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
-        description="Allowed CORS origins"
+    cors_origins: str = Field(
+        default="*",
+        description="Allowed CORS origins (comma-separated or *)"
     )
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Get CORS origins as a list."""
+        if self.cors_origins == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
     # ============================================
     # LangChain & LLM Settings
@@ -172,21 +179,6 @@ class Settings(BaseSettings):
         case_sensitive=False,
         extra="ignore",  # Ignore extra fields from environment
     )
-
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        """Parse CORS origins from comma-separated string or list."""
-        if isinstance(v, str):
-            # Handle empty string
-            if not v or v.strip() == "":
-                return ["*"]
-            # Handle single wildcard
-            if v.strip() == "*":
-                return ["*"]
-            # Handle comma-separated values
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v
 
     @field_validator("log_level")
     @classmethod
