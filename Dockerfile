@@ -41,7 +41,8 @@ WORKDIR /app
 # Set production environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app:$PYTHONPATH"
 
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
