@@ -1,76 +1,9 @@
-# Python
+# Minimal .dockerignore - only exclude what's absolutely necessary
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual environments
-venv/
-env/
-ENV/
-.venv/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Git
 .git/
-.gitignore
-.gitattributes
-
-# Documentation
-*.md
-docs/
-README.md
-APPROACH.md
-ARCHITECTURE.md
-DEPLOYMENT*.md
-START_HERE.md
-RAILWAY*.md
-*.txt
-
-# Testing
-tests/
-.pytest_cache/
-.coverage
-htmlcov/
-*.cover
-
-# Logs
-logs/
-*.log
-
-# Data
-data/samples/
-data/generated/
-data/qdrant_storage/
-qdrant_storage/
-
-# Scripts
-scripts/
-tests/
-
-# Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
-
-# Frontend (not needed in backend build)
+.venv/
 frontend/
-
-# Deployment configs
-railway.json
-.env*
-!.env.example
+node_modules/
+*.md
+.env.local

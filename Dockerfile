@@ -51,6 +51,14 @@ COPY --from=builder /app/.venv /app/.venv
 COPY backend/app /app/app
 COPY backend/start.sh /app/start.sh
 
+# Debug: List copied files to verify structure
+RUN echo "=== Verifying copied files ===" && \
+    ls -la /app/ && \
+    echo "=== /app/app contents ===" && \
+    ls -la /app/app/ && \
+    echo "=== /app/app/models contents ===" && \
+    ls -la /app/app/models/ || echo "models directory not found!"
+
 # Make startup script executable and create necessary directories
 RUN chmod +x start.sh && \
     mkdir -p /app/data/samples /app/data/generated /app/logs && \
