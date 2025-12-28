@@ -47,8 +47,9 @@ ENV PYTHONUNBUFFERED=1 \
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy backend application code
-COPY backend/ .
+# Copy backend application code with explicit structure
+COPY backend/app /app/app
+COPY backend/start.sh /app/start.sh
 
 # Make startup script executable and create necessary directories
 RUN chmod +x start.sh && \
