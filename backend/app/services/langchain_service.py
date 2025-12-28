@@ -326,18 +326,70 @@ Return as JSON:
                     max_tokens=settings.llm_max_tokens,
                 )
 
-            # Generate content
-            logger.info(f"Generating article for topic: {request.topic}")
-            response = await llm.ainvoke(messages)
+            # Generate content with retry logic for word count validation
+            max_retries = 2
+            article_content = None
 
-            article_content = response.content
+            for attempt in range(max_retries + 1):
+                logger.info(f"Generating article for topic: {request.topic} (attempt {attempt + 1}/{max_retries + 1})")
 
+                # Generate article
+                response = await llm.ainvoke(messages)
+                article_content = response.content
+
+                # Validate word count
+                word_count = len(article_content.split())
+                logger.info(f"Generated {word_count} words (target: {request.target_length})")
+
+                # Check if word count is acceptable (allow 10% below target as minimum)
+                min_acceptable = int(request.target_length * 0.9)
+
+                if word_count >= min_acceptable:
+                    # Success - word count is acceptable
+                    generation_time = time.time() - start_time
+                    logger.info(
+                        f"Article generated successfully in {generation_time:.2f}s "
+                        f"({word_count} words, target: {request.target_length})"
+                    )
+                    return article_content
+
+                # Word count too low - retry with more aggressive prompt
+                if attempt < max_retries:
+                    logger.warning(
+                        f"Word count too low ({word_count}/{request.target_length}). "
+                        f"Retrying with more aggressive prompt..."
+                    )
+
+                    # Make the prompt MORE aggressive for retry
+                    shortage = request.target_length - word_count
+                    retry_prompt = f"""{article_prompt}
+
+⚠️⚠️⚠️ CRITICAL ERROR DETECTED ⚠️⚠️⚠️
+The previous attempt was {word_count} words but needed {request.target_length} words.
+You are SHORT by {shortage} words. This is UNACCEPTABLE.
+
+YOU MUST REGENERATE with these changes:
+1. Make the introduction MUCH LONGER (add more context, background, examples)
+2. Add MORE H2 sections (at least 5-6 sections instead of 3-4)
+3. Make EACH section LONGER with MORE paragraphs (5-7 paragraphs per section)
+4. Add MORE examples, case studies, and detailed explanations
+5. Write LONGER paragraphs (7-10 sentences each, not 3-4)
+6. Add MORE elaboration on every single point
+
+DO NOT SUMMARIZE. Write COMPREHENSIVE, DETAILED, IN-DEPTH content.
+The article MUST be AT LEAST {request.target_length} words. NO EXCUSES."""
+
+                    messages = [
+                        SystemMessage(content=self.system_prompt),
+                        HumanMessage(content=retry_prompt),
+                    ]
+
+            # If we get here, all retries failed but return the last attempt
             generation_time = time.time() - start_time
-            logger.info(
-                f"Article generated successfully in {generation_time:.2f}s "
-                f"(length: {len(article_content)} chars)"
+            logger.warning(
+                f"Failed to reach target word count after {max_retries + 1} attempts. "
+                f"Returning article with {word_count} words (target: {request.target_length})"
             )
-
             return article_content
 
         except Exception as e:
