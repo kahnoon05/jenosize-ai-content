@@ -238,7 +238,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-gray-600">
             <p>
-              Powered by Claude AI, LangChain, and Qdrant Vector Database
+              Powered by OpenAI GPT, LangChain, and Qdrant Vector Database
             </p>
             <p className="mt-1 text-xs text-gray-500">
               Jenosize AI Content Generation System - Built for Generative AI Engineer Position

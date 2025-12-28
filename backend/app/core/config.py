@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     debug: bool = Field(default=False, description="Debug mode")
 
     # ============================================
-    # API Keys (At least one required)
+    # API Keys
     # ============================================
-    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API key for Claude models (optional)")
+    # OpenAI API Key is required and loaded from environment (see below)
 
     # ============================================
     # Qdrant Vector Database Settings

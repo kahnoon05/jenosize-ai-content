@@ -64,12 +64,12 @@ async def lifespan(app: FastAPI):
         langchain_service = get_langchain_service()
         logger.info(f"LangChain service initialized with model: {settings.llm_model}")
 
-        # Verify Claude API connectivity
-        claude_healthy, claude_msg = await langchain_service.health_check()
-        if claude_healthy:
-            logger.info(f"Claude API connection verified: {claude_msg}")
+        # Verify OpenAI API connectivity
+        llm_healthy, llm_msg = await langchain_service.health_check()
+        if llm_healthy:
+            logger.info(f"OpenAI API connection verified: {llm_msg}")
         else:
-            logger.warning(f"Claude API check failed: {claude_msg}")
+            logger.warning(f"OpenAI API check failed: {llm_msg}")
 
         logger.info("=" * 60)
         logger.info("Application startup complete - Ready to serve requests")

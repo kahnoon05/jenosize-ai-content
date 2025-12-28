@@ -1,6 +1,6 @@
 # Jenosize AI Content Generation System
 
-> **Production-grade AI system for generating high-quality trend and future ideas articles using Claude 3.5 Sonnet, LangChain, and RAG architecture with Qdrant vector database.**
+> **Production-grade AI system for generating high-quality trend and future ideas articles using Fine-tuned OpenAI GPT-3.5, LangChain, and RAG architecture with Qdrant vector database.**
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-00C7B7?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.1+-000000?logo=next.js)](https://nextjs.org/)
@@ -11,7 +11,7 @@
 ## Overview
 
 This system generates professional business trend articles aligned with Jenosize's content style using:
-- **Claude 3.5 Sonnet API** for advanced content generation
+- **Fine-tuned OpenAI GPT-3.5** for advanced content generation
 - **LangChain framework** for orchestrating complex AI workflows
 - **RAG (Retrieval-Augmented Generation)** with Qdrant for context-aware article creation
 - **Few-shot learning + prompt engineering** for Jenosize-style content
@@ -21,8 +21,8 @@ This system generates professional business trend articles aligned with Jenosize
 
 ```
 ┌─────────────────┐         ┌──────────────────┐         ┌─────────────────┐
-│   Next.js       │────────>│   FastAPI        │────────>│   Claude API    │
-│   Frontend      │         │   Backend        │         │   (Sonnet 3.5)  │
+│   Next.js       │────────>│   FastAPI        │────────>│   OpenAI API    │
+│   Frontend      │         │   Backend        │         │   (GPT-3.5 FT)  │
 │   (Port 3000)   │<────────│   (Port 8000)    │<────────│                 │
 └─────────────────┘         └──────────────────┘         └─────────────────┘
                                      │
@@ -46,7 +46,7 @@ This system generates professional business trend articles aligned with Jenosize
 ### Backend
 - **FastAPI**: Modern Python web framework for building APIs
 - **LangChain**: Framework for LLM application development
-- **Claude 3.5 Sonnet**: State-of-the-art language model via Anthropic API
+- **Fine-tuned GPT-3.5**: OpenAI language model fine-tuned on Jenosize articles
 - **Qdrant**: High-performance vector database for semantic search
 - **Poetry**: Python dependency management
 

@@ -2,13 +2,13 @@
 LangChain RAG Pipeline Service
 
 Manages the LangChain-based RAG (Retrieval-Augmented Generation) pipeline for article generation.
-Integrates Claude 3.5 Sonnet API, prompt templates, and retrieval chains.
+Integrates OpenAI GPT models, prompt templates, and retrieval chains.
 """
 
 from typing import List, Dict, Any, Optional
 import time
+import os
 
-from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain.prompts import PromptTemplate, ChatPromptTemplate
 from langchain.chains import LLMChain
@@ -30,47 +30,31 @@ class LangChainService:
     Service for managing LangChain RAG pipeline and LLM interactions.
 
     Handles:
-    - Claude 3.5 Sonnet initialization
+    - OpenAI GPT model initialization
     - Embedding generation for semantic search
     - Prompt engineering for Jenosize-style content
     - RAG chain execution
     """
 
     def __init__(self):
-        """Initialize LangChain service with OpenAI and embeddings."""
+        """Initialize LangChain service with OpenAI LLM and embeddings."""
         try:
-            # Initialize OpenAI GPT (Changed from Claude to OpenAI)
-            # Check if model is Claude or OpenAI
-            if "claude" in settings.llm_model.lower():
-                self.llm = ChatAnthropic(
-                    anthropic_api_key=settings.anthropic_api_key,
-                    model=settings.llm_model,
-                    temperature=settings.llm_temperature,
-                    max_tokens=settings.llm_max_tokens,
-                )
-                logger.info(f"Initialized Claude LLM: {settings.llm_model}")
-            else:
-                # Use OpenAI (GPT-3.5 or GPT-4)
-                import os
-                openai_key = os.getenv("OPENAI_API_KEY")
-                if not openai_key:
-                    raise ValueError("OPENAI_API_KEY not found in environment variables")
-
-                self.llm = ChatOpenAI(
-                    openai_api_key=openai_key,
-                    model=settings.llm_model,
-                    temperature=settings.llm_temperature,
-                    max_tokens=settings.llm_max_tokens,
-                )
-                logger.info(f"Initialized OpenAI LLM: {settings.llm_model}")
-
-            # Initialize OpenAI embeddings (lighter than local HuggingFace models)
-            # Uses 'text-embedding-3-small' - fast, high quality, API-based
-            import os
+            # Get OpenAI API key from environment
             openai_key = os.getenv("OPENAI_API_KEY")
             if not openai_key:
                 raise ValueError("OPENAI_API_KEY not found in environment variables")
 
+            # Initialize OpenAI LLM (GPT-3.5 or GPT-4)
+            self.llm = ChatOpenAI(
+                openai_api_key=openai_key,
+                model=settings.llm_model,
+                temperature=settings.llm_temperature,
+                max_tokens=settings.llm_max_tokens,
+            )
+            logger.info(f"Initialized OpenAI LLM: {settings.llm_model}")
+
+            # Initialize OpenAI embeddings
+            # Uses 'text-embedding-3-small' - fast, high quality, API-based
             self.embeddings = OpenAIEmbeddings(
                 openai_api_key=openai_key,
                 model="text-embedding-3-small"
@@ -247,7 +231,7 @@ Return as JSON:
         similar_articles: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """
-        Generate article content using Claude with optional RAG context.
+        Generate article content using OpenAI GPT with optional RAG context.
 
         Args:
             request: Article generation request with all parameters
@@ -281,7 +265,7 @@ Return as JSON:
                 keywords=keywords_str,
             )
 
-            # Create messages for Claude
+            # Create messages for OpenAI
             messages = [
                 SystemMessage(content=self.system_prompt),
                 HumanMessage(content=article_prompt),
@@ -290,8 +274,9 @@ Return as JSON:
             # Use custom temperature if provided
             llm = self.llm
             if request.temperature is not None:
-                llm = ChatAnthropic(
-                    anthropic_api_key=settings.anthropic_api_key,
+                openai_key = os.getenv("OPENAI_API_KEY")
+                llm = ChatOpenAI(
+                    openai_api_key=openai_key,
                     model=settings.llm_model,
                     temperature=request.temperature,
                     max_tokens=settings.llm_max_tokens,
@@ -317,7 +302,7 @@ Return as JSON:
 
     async def extract_metadata(self, article_content: str) -> Dict[str, Any]:
         """
-        Extract metadata from generated article using Claude.
+        Extract metadata from generated article using OpenAI GPT.
 
         Sends the article content to the LLM for structured metadata extraction,
         limiting content length to avoid token limits.
@@ -405,7 +390,7 @@ Return as JSON:
 
             embeddings_status = "enabled" if self.embeddings else "disabled"
 
-            return True, f"Claude API operational (embeddings: {embeddings_status})"
+            return True, f"OpenAI API operational (embeddings: {embeddings_status})"
 
         except Exception as e:
             logger.error(f"LangChain health check failed: {str(e)}")
