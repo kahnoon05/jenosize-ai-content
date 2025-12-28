@@ -28,11 +28,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
 
-# Copy only dependency files
+# Copy only dependency files first for better caching
 COPY pyproject.toml poetry.lock* ./
 
-# Install dependencies into .venv (isolates dependencies from Poetry)
+# Install dependencies only (without the app package yet)
 RUN poetry install --only main --no-root
+
+# Copy app code to enable package installation
+COPY app ./app
+
+# Now install the app package itself (makes 'app' module importable)
+RUN poetry install --only-root
 
 # ============================================
 # Stage 2: Production - Minimal runtime image
