@@ -113,7 +113,10 @@ Your articles should:
 5. Incorporate relevant trends and future perspectives
 6. End with actionable conclusions or thought-provoking questions
 7. Use professional but accessible language
-8. Naturally incorporate these keywords if provided: {keywords}
+8. **IMPORTANT - SEO Keywords:** You MUST naturally incorporate ALL of these keywords throughout the article: {keywords}
+   - Include keywords in the title, headings, and body text
+   - Use each keyword at least 2-3 times naturally in context
+   - Maintain readability while ensuring keyword presence
 
 **Output Format:**
 Return ONLY the article content in markdown format, starting with the H1 title.
