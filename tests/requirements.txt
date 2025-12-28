@@ -1,0 +1,15 @@
+# Test Script Dependencies
+# Install with: pip install -r tests/requirements.txt
+
+# HTTP client for API testing
+requests>=2.31.0
+
+# YAML parser for docker-compose.yml validation
+pyyaml>=6.0.1
+
+# Qdrant client for database initialization
+qdrant-client>=1.7.0
+
+# Optional: For enhanced testing
+pytest>=7.4.3
+pytest-asyncio>=0.21.1
