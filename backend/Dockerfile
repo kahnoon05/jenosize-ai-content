@@ -65,4 +65,5 @@ EXPOSE 8000
 
 # Run the application with Railway's dynamic PORT
 # Note: Railway handles healthchecks via railway.json configuration
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Use python -m to avoid PATH issues with uvicorn binary
+CMD python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
