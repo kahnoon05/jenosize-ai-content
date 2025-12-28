@@ -43,10 +43,6 @@ RUN mkdir -p /app/data/samples /app/data/generated /app/logs
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
 # Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
@@ -59,7 +55,7 @@ WORKDIR /app
 COPY pyproject.toml poetry.lock* ./
 
 # Install only production dependencies
-RUN poetry install --no-dev --no-root
+RUN poetry install --only main --no-root
 
 # Copy application code
 COPY . .
@@ -76,9 +72,6 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Run the application with optimized settings
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Run the application with Railway's dynamic PORT
+# Note: Railway handles healthchecks via railway.json configuration
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
