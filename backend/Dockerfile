@@ -3,7 +3,8 @@
 
 FROM python:3.11-slim
 
-WORKDIR /app
+# Set working directory
+WORKDIR /code
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -14,8 +15,8 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_HOME="/opt/poetry" \
     POETRY_NO_INTERACTION=1 \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
-    PATH="/app/.venv/bin:$PATH" \
-    PYTHONPATH="/app:$PYTHONPATH"
+    PATH="/code/.venv/bin:$PATH" \
+    PYTHONPATH="/code:$PYTHONPATH"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -30,23 +31,23 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
 # Copy dependency files
 COPY pyproject.toml poetry.lock* ./
 
-# Install dependencies only (no package installation)
+# Install dependencies only
 RUN poetry install --only main --no-root
 
 # Copy application code
+# This creates /code/app/ directory with all the Python modules
 COPY app ./app
 
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/data/samples /app/data/generated /app/logs && \
+# Create necessary directories
+RUN mkdir -p /code/data/samples /code/data/generated /code/logs && \
     useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /code
 
 USER appuser
 
 # Expose port
 EXPOSE 8000
 
-# Run the application with Railway's dynamic PORT
-# IMPORTANT: Run from /app directory so Python can find the 'app' package
-WORKDIR /app
+# Run uvicorn
+# With PYTHONPATH=/code, Python can find 'app' package at /code/app
 CMD python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
