@@ -126,8 +126,10 @@ temp/
 *.generated.*
 output/
 
-# ML Models & Large Files
-models/
+# ML Models & Large Files (but NOT Python source code in app/models/)
+# Only ignore model files in root or data directories
+/models/
+data/models/
 *.bin
 *.pt
 *.pth
