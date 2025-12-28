@@ -95,10 +95,35 @@ Your articles should:
         # Main article generation prompt template
         self.article_template = """Write a comprehensive business article about: {topic}
 
-**CRITICAL WORD COUNT REQUIREMENT:**
-⚠️ The article MUST be AT LEAST {target_length} words. This is NON-NEGOTIABLE.
-⚠️ Target range: {target_length}-{target_max} words (aim for {target_max} to be safe)
-⚠️ Going under {target_length} words is UNACCEPTABLE and will be rejected.
+⚠️⚠️⚠️ ABSOLUTE REQUIREMENT: MINIMUM {target_length} WORDS ⚠️⚠️⚠️
+
+**MANDATORY ARTICLE STRUCTURE (to reach {target_length} words):**
+
+1. **H1 Title** (10-15 words)
+   - Create an engaging, SEO-friendly title
+
+2. **Introduction Section** (MINIMUM {intro_words} words)
+   - Hook the reader with a compelling opening
+   - Present the topic's relevance and importance
+   - Preview what the article will cover
+   - IMPORTANT: Make this section DETAILED - expand every point
+
+3. **Main Body** (MINIMUM {body_words} words total)
+   - Create 3-5 major H2 sections, each with:
+     * Detailed explanation ({section_words}+ words per section)
+     * Specific examples and case studies
+     * Real-world applications
+     * Data, statistics, or research findings
+     * Expert insights or industry perspectives
+   - Use H3 subsections within each H2 to add depth
+   - Add multiple paragraphs per section (3-5 paragraphs minimum)
+   - Include concrete examples, not just abstract concepts
+
+4. **Conclusion Section** (MINIMUM {conclusion_words} words)
+   - Summarize key insights
+   - Provide actionable takeaways
+   - End with thought-provoking questions or future outlook
+   - Make it substantial - expand on implications
 
 **Context:**
 - Target Industry: {industry}
@@ -106,32 +131,22 @@ Your articles should:
 - Desired Tone: {tone}
 - Include Examples: {include_examples}
 - Include Statistics: {include_statistics}
+- SEO Keywords: {keywords}
 
 {rag_context}
 
-**Requirements:**
-1. **PRIMARY REQUIREMENT - Word Count:** Write a COMPREHENSIVE article with AT LEAST {target_length} words
-   - Add detailed explanations, examples, case studies, and analysis to reach the word count
-   - Expand on each point with specific details and insights
-   - Do NOT write a short summary - write a FULL, DETAILED article
+**WRITING GUIDELINES:**
+- Write LONG, DETAILED paragraphs (5-7 sentences each)
+- Expand every point with specific details, examples, and analysis
+- Use transition sentences between paragraphs
+- Add context and background information
+- Include multiple concrete examples per section
+- Elaborate on implications and significance
+- DO NOT write brief summaries - write COMPREHENSIVE explanations
 
-2. Create an engaging, SEO-friendly title
-
-3. Structure the article with clear H2 and H3 headings using markdown
-
-4. Include an introduction that hooks the reader
-
-5. Provide well-researched insights with specific examples and case studies
-
-6. Incorporate relevant trends and future perspectives
-
-7. End with actionable conclusions or thought-provoking questions
-
-8. Use professional but accessible language
-
-9. Naturally incorporate these SEO keywords if provided: {keywords}
-
-**REMINDER: The article must be at least {target_length} words. Make it comprehensive and detailed!**
+**FINAL CHECK:**
+Before finishing, mentally verify the article has AT LEAST {target_length} words.
+If it's shorter, ADD MORE CONTENT - expand sections, add examples, elaborate on points.
 
 **Output Format:**
 Return ONLY the article content in markdown format, starting with the H1 title.
@@ -270,8 +285,12 @@ Return as JSON:
             # Format keywords
             keywords_str = ", ".join(request.keywords) if request.keywords else "None specified"
 
-            # Calculate target max (add 20% buffer to ensure we exceed minimum)
-            target_max = int(request.target_length * 1.2)
+            # Calculate structured word counts for different sections
+            # This helps the LLM understand how to distribute words across the article
+            intro_words = int(request.target_length * 0.15)  # 15% for intro
+            conclusion_words = int(request.target_length * 0.15)  # 15% for conclusion
+            body_words = int(request.target_length * 0.70)  # 70% for main body
+            section_words = int(body_words / 4)  # Assuming 4 main sections
 
             # Build the prompt
             article_prompt = self.article_template.format(
@@ -280,7 +299,10 @@ Return as JSON:
                 audience=request.audience.value,
                 tone=request.tone.value,
                 target_length=request.target_length,
-                target_max=target_max,
+                intro_words=intro_words,
+                body_words=body_words,
+                section_words=section_words,
+                conclusion_words=conclusion_words,
                 include_examples="Yes" if request.include_examples else "No",
                 include_statistics="Yes" if request.include_statistics else "No",
                 rag_context=rag_context,
