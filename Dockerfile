@@ -49,8 +49,9 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy backend application code
 COPY backend/ .
 
-# Create necessary directories and user in single layer
-RUN mkdir -p /app/data/samples /app/data/generated /app/logs && \
+# Make startup script executable and create necessary directories
+RUN chmod +x start.sh && \
+    mkdir -p /app/data/samples /app/data/generated /app/logs && \
     useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
@@ -59,6 +60,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run the application
-# Railway sets PORT environment variable, default to 8000 if not set
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Run the application using startup script
+CMD ["./start.sh"]
