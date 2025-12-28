@@ -88,7 +88,6 @@ data/qdrant_storage/
 qdrant_storage/
 
 # Docker
-.dockerignore
 docker-compose.override.yml
 
 # Testing

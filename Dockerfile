@@ -43,23 +43,15 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app/.venv/bin:$PATH"
 
-# Install only runtime dependencies (no build tools)
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
-
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
 # Copy backend application code
 COPY backend/ .
 
-# Create necessary directories
-RUN mkdir -p /app/data/samples /app/data/generated /app/logs
-
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
+# Create necessary directories and user in single layer
+RUN mkdir -p /app/data/samples /app/data/generated /app/logs && \
+    useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
 USER appuser
