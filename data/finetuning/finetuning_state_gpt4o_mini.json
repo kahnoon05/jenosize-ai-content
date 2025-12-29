@@ -1,0 +1,10 @@
+{
+  "file_id": "file-JdzKcbR3ppB1FTks8ymnCw",
+  "job_id": "ftjob-Jm6aaGKV1pXN6h10ODVvHdlA",
+  "base_model": "gpt-4o-mini-2024-07-18",
+  "status": "succeeded",
+  "created_at": 1766967891,
+  "finished_at": 1766968319,
+  "fine_tuned_model": "ft:gpt-4o-mini-2024-07-18:futuretrendarticle:jenosize:CrvSz2Ex",
+  "trained_tokens": 19620
+}
